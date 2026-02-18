@@ -342,9 +342,9 @@
 
         fetchFromLiveSite(liveUrl)
           .then(function (html) {
-            var w = window.open("", "_blank");
-            w.document.write(html);
-            w.document.close();
+            var blob = new Blob([html], { type: "text/html; charset=utf-8" });
+            var blobUrl = URL.createObjectURL(blob);
+            window.open(blobUrl, "_blank");
           })
           .catch(function (err) {
             alert("Failed to fetch page: " + err.message);
