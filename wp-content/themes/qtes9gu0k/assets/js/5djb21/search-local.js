@@ -342,12 +342,11 @@
 
         fetchFromLiveSite(liveUrl)
           .then(function (html) {
-            // Blob URLs can't resolve absolute paths (/20260212/...),
-            // so convert them to full URLs with the host origin
-            html = html.replace(/\/20260212\//g, location.origin + "/20260212/");
-            var blob = new Blob([html], { type: "text/html; charset=utf-8" });
-            var blobUrl = URL.createObjectURL(blob);
-            window.open(blobUrl, "_blank");
+            // Store HTML in sessionStorage, open viewer.html to render it
+            // viewer.html is a real URL so CSS/images load normally & reload works
+            var key = Date.now().toString(36);
+            sessionStorage.setItem("viewer_" + key, html);
+            window.open("/20260212/viewer.html?key=" + key, "_blank");
           })
           .catch(function (err) {
             alert("Failed to fetch page: " + err.message);

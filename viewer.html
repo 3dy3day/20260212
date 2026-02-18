@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Loading...</title>
+</head>
+<body>
+<script>
+(function () {
+  var key = location.search.replace("?key=", "");
+  if (!key) { document.body.textContent = "No key specified."; return; }
+  var html = sessionStorage.getItem("viewer_" + key);
+  if (!html) { document.body.textContent = "Content not found. Please search again."; return; }
+  document.open();
+  document.write(html);
+  document.close();
+})();
+</script>
+</body>
+</html>
