@@ -342,9 +342,9 @@
 
         fetchFromLiveSite(liveUrl)
           .then(function (html) {
-            // Inject <base> tag so relative/absolute URLs resolve against the host
-            var baseTag = '<base href="' + location.origin + '/">';
-            html = html.replace(/<head([^>]*)>/, "<head$1>" + baseTag);
+            // Blob URLs can't resolve absolute paths (/20260212/...),
+            // so convert them to full URLs with the host origin
+            html = html.replace(/\/20260212\//g, location.origin + "/20260212/");
             var blob = new Blob([html], { type: "text/html; charset=utf-8" });
             var blobUrl = URL.createObjectURL(blob);
             window.open(blobUrl, "_blank");
