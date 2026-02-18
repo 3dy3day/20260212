@@ -13,9 +13,42 @@
   "use strict";
 
   var LIVE_SITE = "https://www.qtes9gu0k.xyz";
-  var ALLORIGINS = "https://api.allorigins.win/get?url=";
   var IS_LOCAL = location.hostname === "localhost" || location.hostname === "127.0.0.1";
   var PROXY_ORIGIN = location.protocol + "//" + location.hostname + ":8081";
+
+  // CORS proxy services - tried in order until one succeeds
+  var CORS_PROXIES = [
+    {
+      name: "corsproxy.io",
+      buildUrl: function (url) {
+        return "https://corsproxy.io/?" + encodeURIComponent(url);
+      },
+      extract: function (r) {
+        return r.text();  // returns raw HTML
+      }
+    },
+    {
+      name: "allorigins",
+      buildUrl: function (url) {
+        return "https://api.allorigins.win/get?url=" + encodeURIComponent(url);
+      },
+      extract: function (r) {
+        return r.json().then(function (data) {
+          if (!data.contents) throw new Error("allorigins returned no contents");
+          return data.contents;
+        });
+      }
+    },
+    {
+      name: "corsproxy.org",
+      buildUrl: function (url) {
+        return "https://corsproxy.org/?" + encodeURIComponent(url);
+      },
+      extract: function (r) {
+        return r.text();
+      }
+    }
+  ];
 
   var KEY_MAP = null;
   var inputField = document.getElementById("5djb21-input");
@@ -51,6 +84,30 @@
 
   // ========== Fetch abstraction ==========
 
+  function fetchViaCorsProxy(url, proxyIndex) {
+    if (proxyIndex >= CORS_PROXIES.length) {
+      return Promise.reject(new Error("All CORS proxies failed"));
+    }
+    var proxy = CORS_PROXIES[proxyIndex];
+    var proxyUrl = proxy.buildUrl(url);
+    console.log("[search-local] Trying proxy:", proxy.name, proxyUrl);
+
+    return fetch(proxyUrl)
+      .then(function (r) {
+        if (!r.ok) throw new Error(proxy.name + " returned " + r.status);
+        return proxy.extract(r);
+      })
+      .then(function (html) {
+        if (!html || html.length < 100) throw new Error(proxy.name + " returned empty/short response");
+        console.log("[search-local] Success via", proxy.name);
+        return deactivateHtml(html);
+      })
+      .catch(function (err) {
+        console.warn("[search-local]", proxy.name, "failed:", err.message);
+        return fetchViaCorsProxy(url, proxyIndex + 1);
+      });
+  }
+
   function fetchFromLiveSite(url) {
     if (IS_LOCAL) {
       // Use local proxy - returns JSON with {ok, html, result_html, has_results}
@@ -69,14 +126,8 @@
           return data.html;
         });
     } else {
-      // Use allorigins CORS proxy
-      var encoded = encodeURIComponent(url);
-      return fetch(ALLORIGINS + encoded)
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          if (!data.contents) throw new Error("allorigins returned no contents");
-          return deactivateHtml(data.contents);
-        });
+      // Try CORS proxies in order (fallback chain)
+      return fetchViaCorsProxy(url, 0);
     }
   }
 
@@ -209,7 +260,7 @@
         showResults(resultHtml, hasResults, query);
       })
       .catch(function (err) {
-        var hint = IS_LOCAL ? "\nsearch_proxy.py is running?" : "\nCORS proxy may be down.";
+        var hint = IS_LOCAL ? "\nsearch_proxy.py is running?" : "\nAll CORS proxies failed. The target site may be down.";
         showError("Search error: " + err.message + hint);
       });
   });
@@ -318,5 +369,5 @@
   document.body.style.overflow = "";
   document.body.style.opacity = "1";
 
-  console.log("[search-local] Initialized. Mode:", IS_LOCAL ? "LOCAL (proxy)" : "REMOTE (allorigins)");
+  console.log("[search-local] Initialized. Mode:", IS_LOCAL ? "LOCAL (proxy)" : "REMOTE (CORS proxy chain)");
 })();
