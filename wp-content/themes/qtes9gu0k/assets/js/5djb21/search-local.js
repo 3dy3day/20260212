@@ -71,6 +71,8 @@
     html = html.replace(/(app\.css)\?ver=[^"]*"/g, '$1"');
     // 4. Add is-loaded class to result items
     html = html.replace(/p-5djb21-result__item">/g, 'p-5djb21-result__item is-loaded">');
+    // 5. Restore upload URLs to live site (images aren't stored locally)
+    html = html.replace(/\/20260212\/wp-content\/uploads\//g, LIVE_SITE + "/wp-content/uploads/");
     return html;
   }
 
