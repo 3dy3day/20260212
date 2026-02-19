@@ -11,6 +11,15 @@
   if (!key) { document.body.textContent = "No key specified."; return; }
   var html = sessionStorage.getItem("viewer_" + key);
   if (!html) { document.body.textContent = "Content not found. Please search again."; return; }
+
+  // Extract title from the HTML to inject it reliably
+  var titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+  var pageTitle = titleMatch ? titleMatch[1] : "Page";
+
+  // Inject a script before </body> that forces the title after parsing
+  var titleScript = "<script>document.title=" + JSON.stringify(pageTitle) + ";<\/script>";
+  html = html.replace(/<\/body>/i, titleScript + "</body>");
+
   document.open();
   document.write(html);
   document.close();
