@@ -196,7 +196,10 @@
   function mergeRadicals() {
     var left = document.querySelector('input[name="left-radical"]:checked');
     var right = document.querySelector('input[name="right-radical"]:checked');
-    if (left && right && KEY_MAP) {
+    if (!right) return;
+
+    if (left && KEY_MAP) {
+      // Both selected -> CJK character lookup
       var lv = left.value;
       var rv = right.value;
       if (KEY_MAP[lv] && KEY_MAP[lv][rv]) {
@@ -205,6 +208,11 @@
         right.checked = false;
         updateSubmitButton();
       }
+    } else if (!left) {
+      // Right only -> insert katakana directly (for number search)
+      inputField.value += right.value;
+      right.checked = false;
+      updateSubmitButton();
     }
   }
 
